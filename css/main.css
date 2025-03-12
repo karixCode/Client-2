@@ -1,0 +1,23 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.columns {
+    display: flex;
+    justify-content: space-around;
+}
+
+.column {
+    width: 30%;
+    background: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.card {
+    background: white;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
