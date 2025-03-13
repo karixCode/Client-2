@@ -21,6 +21,10 @@ Vue.component('card-component', {
         card: {
             type: Object,
             required: true
+        },
+        cardIndex: {
+            type: Number,
+            required: true
         }
     },
     template: `
@@ -34,9 +38,16 @@ Vue.component('card-component', {
                     :task="task">
                 </task-component>
             </ul>
-            <button>Добавить пункт</button>
+            <button v-if="card.tasks.length < 5" @click="addTask">Добавить пункт</button>
         </div>
     `,
+    methods: {
+        addTask() {
+            const text = prompt('Введите задачу')
+            if (!text) return
+            this.$emit('add-task', this.cardIndex, text)
+        }
+    }
 })
 
 Vue.component('column-component', {
@@ -56,7 +67,9 @@ Vue.component('column-component', {
             <card-component 
                 v-for="(card, index) in column.cards"
                 :key="index"
-                :card="card">
+                :card="card"
+                :cardIndex="index"
+                @add-task="(cardIndex, text) => $emit('add-task', columnIndex, cardIndex, text)">
             </card-component>
             <button @click="$emit('add-card', columnIndex)">Добавить карточку</button>
         </div>
@@ -75,14 +88,19 @@ new Vue({
                             title: "Card 1",
                             tasks: [
                                 { text: "Task 1", completed: false },
-                                { text: "Task 2", completed: true }
+                                { text: "Task 2", completed: true },
+                                { text: "Task 2", completed: true },
+                                { text: "Task 2", completed: true },
+                                { text: "Task 2", completed: true },
                             ]
                         },
                         {
                             title: "Card 2",
                             tasks: [
                                 { text: "Task 3", completed: false },
-                                { text: "Task 4", completed: false }
+                                { text: "Task 4", completed: false },
+                                { text: "Task 4", completed: false },
+                                { text: "Task 4", completed: false },
                             ]
                         }
                     ]
@@ -138,6 +156,11 @@ new Vue({
             })
 
             console.log(this.columns[columnIndex].cards)
+        },
+        addTask(columnIndex, cardIndex, text) {
+            console.log(columnIndex, cardIndex, text)
+
+            this.columns[columnIndex].cards[cardIndex].push({text, completed: false})
         }
     }
 });
