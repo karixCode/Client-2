@@ -43,7 +43,8 @@ Vue.component('card-component', {
                     @task-updated="(taskIndex) => $emit('task-updated', cardIndex, taskIndex)">
                 </task-component>
             </ul>
-            <button v-if="card.tasks.length < 5" @click="addTask">Добавить пункт</button>
+            <button v-if="!card.completedAt && card.tasks.length < 5" @click="addTask">Добавить пункт</button>
+            <p v-if="card.completedAt">Завершено: {{ card.completedAt }}</p>
         </div>
     `,
     methods: {
@@ -68,7 +69,7 @@ Vue.component('column-component', {
     },
     template: `
         <div class="column">
-            <h2>{{ column.title }}</h2>
+            <h2>{{ column.title }}({{column.cards.length}})</h2>
             <card-component 
                 v-for="(card, index) in column.cards"
                 :key="index"
@@ -77,7 +78,7 @@ Vue.component('column-component', {
                 @add-task="(cardIndex, text) => $emit('add-task', columnIndex, cardIndex, text)"
                 @task-updated="(cardIndex, taskIndex) => $emit('task-updated', columnIndex, cardIndex, taskIndex)">
             </card-component>
-            <button v-if="columnIndex === 0" @click="$emit('add-card', columnIndex)">Добавить карточку</button>
+            <button v-if="columnIndex === 0 && column.cards.length < 3" @click="$emit('add-card', columnIndex)">Добавить карточку</button>
         </div>
     `
 })
@@ -160,14 +161,27 @@ new Vue({
                 tasks,
                 completedAt: null
             })
-
-            console.log(this.columns[columnIndex].cards)
         },
         addTask(columnIndex, cardIndex, text) {
             this.columns[columnIndex].cards[cardIndex].tasks.push({text, completed: false})
         },
         updateTaskStatus(columnIndex, cardIndex, taskIndex) {
-            this.columns[columnIndex].cards[cardIndex].tasks[taskIndex].completed = !this.columns[columnIndex].cards[cardIndex].tasks[taskIndex].completed;
+            this.updateColumns(columnIndex, cardIndex)
+
+        },
+        updateColumns(columnIndex, cardIndex,) {
+
+            const tasks = this.columns[columnIndex].cards[cardIndex].tasks
+            const completedTasks = tasks.filter(item => item.completed)
+            const progress = completedTasks.length / tasks.length
+
+            if (columnIndex === 0 && progress > 0.5 && this.columns[1].cards.length < 5) this.moveCard(columnIndex, cardIndex, 1)
+            if (progress >= 1) this.moveCard(columnIndex, cardIndex, 2)
+        },
+        moveCard(columnIndex, cardIndex, toIndex) {
+            const [card] = this.columns[columnIndex].cards.splice(cardIndex, 1)
+            if (toIndex === 2) card.completedAt = new Date().toLocaleString();
+            this.columns[toIndex].cards.push(card)
         }
     }
 });
