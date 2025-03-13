@@ -3,12 +3,16 @@ Vue.component('task-component', {
         task: {
             type: Object,
             required: true
+        },
+        taskIndex: {
+            type: Number,
+            required: true
         }
     },
     template: `
         <li>
             <label>
-                <input type="checkbox" v-model="task.completed" @change="$emit('task-updated')">
+                <input type="checkbox" v-model="task.completed" @change="$emit('task-updated', taskIndex)">
                 {{ task.text }}
             </label>
         </li>
@@ -31,11 +35,12 @@ Vue.component('card-component', {
         <div class="card">
             <h3>{{ card.title }}</h3>
             <ul>
-            
                 <task-component
                     v-for="(task, index) in card.tasks"
                     :key="index"
-                    :task="task">
+                    :task="task"
+                    :taskIndex="index"
+                    @task-updated="(taskIndex) => $emit('task-updated', cardIndex, taskIndex)">
                 </task-component>
             </ul>
             <button v-if="card.tasks.length < 5" @click="addTask">Добавить пункт</button>
@@ -69,11 +74,12 @@ Vue.component('column-component', {
                 :key="index"
                 :card="card"
                 :cardIndex="index"
-                @add-task="(cardIndex, text) => $emit('add-task', columnIndex, cardIndex, text)">
+                @add-task="(cardIndex, text) => $emit('add-task', columnIndex, cardIndex, text)"
+                @task-updated="(cardIndex, taskIndex) => $emit('task-updated', columnIndex, cardIndex, taskIndex)">
             </card-component>
             <button @click="$emit('add-card', columnIndex)">Добавить карточку</button>
         </div>
-    `,
+    `
 })
 
 new Vue({
@@ -158,9 +164,10 @@ new Vue({
             console.log(this.columns[columnIndex].cards)
         },
         addTask(columnIndex, cardIndex, text) {
-            console.log(columnIndex, cardIndex, text)
-
-            this.columns[columnIndex].cards[cardIndex].push({text, completed: false})
+            this.columns[columnIndex].cards[cardIndex].tasks.push({text, completed: false})
+        },
+        updateTaskStatus(columnIndex, cardIndex, taskIndex) {
+            this.columns[columnIndex].cards[cardIndex].tasks[taskIndex].completed = !this.columns[columnIndex].cards[cardIndex].tasks[taskIndex].completed;
         }
     }
 });
