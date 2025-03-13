@@ -16,13 +16,12 @@ Vue.component('task-component', {
     template: `
         <li>
             <label>
-                <input type="checkbox" v-model="task.completed" :disabled="disabled" @change="$emit('task-updated', taskIndex)">
+                <input type="checkbox" v-model="task.completed" :disabled="disabled" @change="$emit('task-updated')">
                 {{ task.text }}
             </label>
         </li>
     `
-});
-
+})
 
 Vue.component('card-component', {
     props: {
@@ -49,7 +48,7 @@ Vue.component('card-component', {
                     :task="task"
                     :taskIndex="index"
                     :disabled="isFirstColumnBlocked || !!card.completedAt"
-                    @task-updated="(taskIndex) => $emit('task-updated', cardIndex, taskIndex)">
+                    @task-updated="$emit('task-updated', cardIndex)">
                 </task-component>
             </ul>
             <button v-if="canAddTask" @click="addTask">Добавить пункт</button>
@@ -64,8 +63,8 @@ Vue.component('card-component', {
     methods: {
         addTask() {
             const text = prompt('Введите задачу')
-            if (!text) return
-            this.$emit('add-task', this.cardIndex, text)
+            console.log(text)
+            if (text) this.$emit('add-task', text)
         }
     }
 })
@@ -94,8 +93,8 @@ Vue.component('column-component', {
                 :card="card"
                 :cardIndex="index"
                 :is-first-column-blocked="isFirstColumnBlocked"
-                @add-task="(cardIndex, text) => $emit('add-task', columnIndex, cardIndex, text)"
-                @task-updated="(cardIndex, taskIndex) => $emit('task-updated', columnIndex, cardIndex, taskIndex)">
+                @add-task="(text) => $emit('add-task', columnIndex, index, text)"
+                @task-updated="$emit('task-updated', columnIndex, index)">
             </card-component>
             <button v-if="canAddCard" @click="$emit('add-card', columnIndex)">Добавить карточку</button>
         </div>
@@ -111,57 +110,23 @@ new Vue({
     el: '#app',
     data() {
         return {
-            columns: [
+            columns: JSON.parse(localStorage.getItem("columns")) || [
                 {
                     title: "Новые",
                     cards: [
-                        {
-                            id: 1,
-                            title: "Card 1",
-                            tasks: [
-                                { text: "Task 1", completed: false },
-                                { text: "Task 2", completed: false },
-                                { text: "Task 2", completed: false },
-                                { text: "Task 2", completed: true },
-                                { text: "Task 2", completed: true },
-                            ]
-                        },
-                        {
-                            id: 2,
-                            title: "Card 2",
-                            tasks: [
-                                { text: "Task 3", completed: false },
-                                { text: "Task 4", completed: false },
-                                { text: "Task 4", completed: false },
-                                { text: "Task 4", completed: false },
-                            ]
-                        }
+                        { id: 1, title: "Card 1", tasks: [{ text: "Task 1", completed: false }, { text: "Task 2", completed: false }] },
+                        { id: 2, title: "Card 2", tasks: [{ text: "Task 3", completed: false }, { text: "Task 4", completed: false }] }
                     ]
                 },
-                {
-                    title: "В процессе",
-                    cards: [
-                        {
-                            id: 3,
-                            title: "Card 3",
-                            tasks: [
-                                { text: "Task 5", completed: false },
-                                { text: "Task 6", completed: true }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    title: "Завершенные",
-                    cards: []
-                }
+                { title: "В процессе", cards: [{ id: 3, title: "Card 3", tasks: [{ text: "Task 5", completed: false }, { text: "Task 6", completed: true }] }] },
+                { title: "Завершенные", cards: [] }
             ]
         }
     },
     computed: {
         isFirstColumnBlocked() {
-            return this.columns[1].cards.length >= 5;
-        },
+            return this.columns[1].cards.length >= 5
+        }
     },
     methods: {
         addCard(columnIndex) {
@@ -172,12 +137,11 @@ new Vue({
 
             for (let i = 0; i < 3; i++) {
                 tasks[i] = {
-                    text: prompt(`Введите название задачи ${i+1}`),
+                    text: prompt(`Введите название задачи ${i + 1}`),
                     completed: false,
                 }
 
                 if (!tasks[i].text) return
-
             }
 
             this.columns[columnIndex].cards.push({
@@ -189,14 +153,11 @@ new Vue({
             this.saveData()
         },
         addTask(columnIndex, cardIndex, text) {
-            this.columns[columnIndex].cards[cardIndex].tasks.push({text, completed: false})
+            console.log(columnIndex, cardIndex, text)
+            this.columns[columnIndex].cards[cardIndex].tasks.push({ text, completed: false })
             this.saveData()
         },
-        updateTaskStatus(columnIndex, cardIndex, taskIndex) {
-            this.updateColumns(columnIndex, cardIndex)
-            this.saveData()
-        },
-        updateColumns(columnIndex, cardIndex,) {
+        updateColumns(columnIndex, cardIndex) {
             const tasks = this.columns[columnIndex].cards[cardIndex].tasks
             const completedTasks = tasks.filter(item => item.completed)
             const progress = completedTasks.length / tasks.length
@@ -207,23 +168,12 @@ new Vue({
         },
         moveCard(columnIndex, cardIndex, toIndex) {
             const [card] = this.columns[columnIndex].cards.splice(cardIndex, 1)
-            if (toIndex === 2) card.completedAt = new Date().toLocaleString();
+            if (toIndex === 2) card.completedAt = new Date().toLocaleString()
             this.columns[toIndex].cards.push(card)
             this.saveData()
         },
         saveData() {
-            localStorage.setItem("columns", JSON.stringify(this.columns));
-        },
-        loadData() {
-            const savedData = localStorage.getItem("columns");
-            if (savedData) {
-                this.columns = JSON.parse(savedData);
-            }
+            localStorage.setItem("columns", JSON.stringify(this.columns))
         }
-    },
-    mounted() {
-        this.loadData();
     }
-});
-
-
+})
