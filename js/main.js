@@ -8,7 +8,7 @@ Vue.component('task-component', {
     template: `
         <li>
             <label>
-                <input type="checkbox" v-model="task.completed">
+                <input type="checkbox" v-model="task.completed" @change="$emit('task-updated')">
                 {{ task.text }}
             </label>
         </li>
@@ -45,6 +45,10 @@ Vue.component('column-component', {
             type: Object,
             required: true
         },
+        columnIndex: {
+            type: Number,
+            required: true
+        }
     },
     template: `
         <div class="column">
@@ -54,9 +58,7 @@ Vue.component('column-component', {
                 :key="index"
                 :card="card">
             </card-component>
-            <button 
-                Добавить карточку
-            </button>
+            <button @click="$emit('add-card', columnIndex)">Добавить карточку</button>
         </div>
     `,
 })
@@ -111,6 +113,32 @@ new Vue({
                 }
             ]
         };
+    },
+    methods: {
+        addCard(columnIndex) {
+            const title = prompt('Введите название карточки')
+            if (!title) return
+
+            const tasks = []
+
+            for (let i = 0; i < 3; i++) {
+                tasks[i] = {
+                    text: prompt(`Введите название задачи ${i+1}`),
+                    completed: false,
+                }
+
+                if (!tasks[i].text) return
+
+            }
+
+            this.columns[columnIndex].cards.push({
+                title,
+                tasks,
+                completedAt: null
+            })
+
+            console.log(this.columns[columnIndex].cards)
+        }
     }
 });
 
