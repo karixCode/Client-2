@@ -7,12 +7,16 @@ Vue.component('task-component', {
         taskIndex: {
             type: Number,
             required: true
+        },
+        disabled: {
+            type: Boolean,
+            default: false
         }
     },
     template: `
         <li>
             <label>
-                <input type="checkbox" v-model="task.completed" @change="$emit('task-updated', taskIndex)">
+                <input type="checkbox" v-model="task.completed" :disabled="disabled" @change="$emit('task-updated', taskIndex)">
                 {{ task.text }}
             </label>
         </li>
@@ -44,6 +48,7 @@ Vue.component('card-component', {
                     :key="index"
                     :task="task"
                     :taskIndex="index"
+                    :disabled="isFirstColumnBlocked || !!card.completedAt"
                     @task-updated="(taskIndex) => $emit('task-updated', cardIndex, taskIndex)">
                 </task-component>
             </ul>
@@ -53,7 +58,7 @@ Vue.component('card-component', {
     `,
     computed: {
         canAddTask() {
-            return !card.completedAt && card.tasks.length < 5 && !isFirstColumnBlocked
+            return !this.card.completedAt && this.card.tasks.length < 5 && !this.isFirstColumnBlocked
         }
     },
     methods: {
@@ -85,7 +90,7 @@ Vue.component('column-component', {
             <h2>{{ column.title }}({{column.cards.length}})</h2>
             <card-component 
                 v-for="(card, index) in column.cards"
-                :key="index"
+                :key="card.id"
                 :card="card"
                 :cardIndex="index"
                 :is-first-column-blocked="isFirstColumnBlocked"
@@ -111,16 +116,18 @@ new Vue({
                     title: "Новые",
                     cards: [
                         {
+                            id: 1,
                             title: "Card 1",
                             tasks: [
                                 { text: "Task 1", completed: false },
-                                { text: "Task 2", completed: true },
-                                { text: "Task 2", completed: true },
+                                { text: "Task 2", completed: false },
+                                { text: "Task 2", completed: false },
                                 { text: "Task 2", completed: true },
                                 { text: "Task 2", completed: true },
                             ]
                         },
                         {
+                            id: 2,
                             title: "Card 2",
                             tasks: [
                                 { text: "Task 3", completed: false },
@@ -135,6 +142,7 @@ new Vue({
                     title: "В процессе",
                     cards: [
                         {
+                            id: 3,
                             title: "Card 3",
                             tasks: [
                                 { text: "Task 5", completed: false },
@@ -145,23 +153,15 @@ new Vue({
                 },
                 {
                     title: "Завершенные",
-                    cards: [
-                        {
-                            title: "Card 4",
-                            tasks: [
-                                { text: "Task 7", completed: true },
-                                { text: "Task 8", completed: true }
-                            ]
-                        }
-                    ]
+                    cards: []
                 }
             ]
-        };
+        }
     },
     computed: {
         isFirstColumnBlocked() {
             return this.columns[1].cards.length >= 5;
-        }
+        },
     },
     methods: {
         addCard(columnIndex) {
@@ -181,35 +181,48 @@ new Vue({
             }
 
             this.columns[columnIndex].cards.push({
+                id: Date.now(),
                 title,
                 tasks,
                 completedAt: null
             })
+            this.saveData()
         },
         addTask(columnIndex, cardIndex, text) {
             this.columns[columnIndex].cards[cardIndex].tasks.push({text, completed: false})
+            this.saveData()
         },
         updateTaskStatus(columnIndex, cardIndex, taskIndex) {
             this.updateColumns(columnIndex, cardIndex)
-
+            this.saveData()
         },
         updateColumns(columnIndex, cardIndex,) {
-
             const tasks = this.columns[columnIndex].cards[cardIndex].tasks
             const completedTasks = tasks.filter(item => item.completed)
             const progress = completedTasks.length / tasks.length
 
-            console.log(progress)
-            console.log(this.columns[0].cards)
-
             if (columnIndex === 0 && progress > 0.5 && this.columns[1].cards.length < 5) this.moveCard(columnIndex, cardIndex, 1)
-            else if (progress >= 1) this.moveCard(columnIndex, cardIndex, 2)
+            else if (progress === 1) this.moveCard(columnIndex, cardIndex, 2)
+            this.saveData()
         },
         moveCard(columnIndex, cardIndex, toIndex) {
             const [card] = this.columns[columnIndex].cards.splice(cardIndex, 1)
             if (toIndex === 2) card.completedAt = new Date().toLocaleString();
             this.columns[toIndex].cards.push(card)
+            this.saveData()
+        },
+        saveData() {
+            localStorage.setItem("columns", JSON.stringify(this.columns));
+        },
+        loadData() {
+            const savedData = localStorage.getItem("columns");
+            if (savedData) {
+                this.columns = JSON.parse(savedData);
+            }
         }
+    },
+    mounted() {
+        this.loadData();
     }
 });
 
