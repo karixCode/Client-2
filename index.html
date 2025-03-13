@@ -16,9 +16,10 @@
                 :key="index"
                 :column="column"
                 :column-index="index"
+                :is-first-column-blocked="index === 0 ? isFirstColumnBlocked : false"
                 @add-card="addCard"
                 @add-task="addTask"
-                @task-updated="updateTaskStatus">
+                @task-updated="updateColumns">
         </column-component>
     </div>
 </div>

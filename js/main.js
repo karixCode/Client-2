@@ -29,6 +29,10 @@ Vue.component('card-component', {
         cardIndex: {
             type: Number,
             required: true
+        },
+        isFirstColumnBlocked: {
+            type: Boolean,
+            default: false
         }
     },
     template: `
@@ -43,10 +47,15 @@ Vue.component('card-component', {
                     @task-updated="(taskIndex) => $emit('task-updated', cardIndex, taskIndex)">
                 </task-component>
             </ul>
-            <button v-if="!card.completedAt && card.tasks.length < 5" @click="addTask">Добавить пункт</button>
+            <button v-if="canAddTask" @click="addTask">Добавить пункт</button>
             <p v-if="card.completedAt">Завершено: {{ card.completedAt }}</p>
         </div>
     `,
+    computed: {
+        canAddTask() {
+            return !card.completedAt && card.tasks.length < 5 && !isFirstColumnBlocked
+        }
+    },
     methods: {
         addTask() {
             const text = prompt('Введите задачу')
@@ -65,6 +74,10 @@ Vue.component('column-component', {
         columnIndex: {
             type: Number,
             required: true
+        },
+        isFirstColumnBlocked: {
+            type: Boolean,
+            default: false
         }
     },
     template: `
@@ -75,12 +88,18 @@ Vue.component('column-component', {
                 :key="index"
                 :card="card"
                 :cardIndex="index"
+                :is-first-column-blocked="isFirstColumnBlocked"
                 @add-task="(cardIndex, text) => $emit('add-task', columnIndex, cardIndex, text)"
                 @task-updated="(cardIndex, taskIndex) => $emit('task-updated', columnIndex, cardIndex, taskIndex)">
             </card-component>
-            <button v-if="columnIndex === 0 && column.cards.length < 3" @click="$emit('add-card', columnIndex)">Добавить карточку</button>
+            <button v-if="canAddCard" @click="$emit('add-card', columnIndex)">Добавить карточку</button>
         </div>
-    `
+    `,
+    computed: {
+        canAddCard() {
+            return this.columnIndex === 0 && this.column.cards.length < 3 && !this.isFirstColumnBlocked
+        }
+    }
 })
 
 new Vue({
@@ -139,6 +158,11 @@ new Vue({
             ]
         };
     },
+    computed: {
+        isFirstColumnBlocked() {
+            return this.columns[1].cards.length >= 5;
+        }
+    },
     methods: {
         addCard(columnIndex) {
             const title = prompt('Введите название карточки')
@@ -175,8 +199,11 @@ new Vue({
             const completedTasks = tasks.filter(item => item.completed)
             const progress = completedTasks.length / tasks.length
 
+            console.log(progress)
+            console.log(this.columns[0].cards)
+
             if (columnIndex === 0 && progress > 0.5 && this.columns[1].cards.length < 5) this.moveCard(columnIndex, cardIndex, 1)
-            if (progress >= 1) this.moveCard(columnIndex, cardIndex, 2)
+            else if (progress >= 1) this.moveCard(columnIndex, cardIndex, 2)
         },
         moveCard(columnIndex, cardIndex, toIndex) {
             const [card] = this.columns[columnIndex].cards.splice(cardIndex, 1)
