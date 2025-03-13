@@ -77,7 +77,7 @@ Vue.component('column-component', {
                 @add-task="(cardIndex, text) => $emit('add-task', columnIndex, cardIndex, text)"
                 @task-updated="(cardIndex, taskIndex) => $emit('task-updated', columnIndex, cardIndex, taskIndex)">
             </card-component>
-            <button @click="$emit('add-card', columnIndex)">Добавить карточку</button>
+            <button v-if="columnIndex === 0" @click="$emit('add-card', columnIndex)">Добавить карточку</button>
         </div>
     `
 })
