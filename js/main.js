@@ -96,7 +96,7 @@ Vue.component('column-component', {
                 @add-task="(text) => $emit('add-task', columnIndex, index, text)"
                 @task-updated="$emit('task-updated', columnIndex, index)">
             </card-component>
-            <button v-if="canAddCard" @click="$emit('add-card', columnIndex)">Добавить карточку</button>
+            <button v-if="canAddCard" @click="$emit('add-card')">Добавить карточку</button>
         </div>
     `,
     computed: {
@@ -120,7 +120,9 @@ new Vue({
                 },
                 { title: "В процессе", cards: [{ id: 3, title: "Card 3", tasks: [{ text: "Task 5", completed: false }, { text: "Task 6", completed: true }] }] },
                 { title: "Завершенные", cards: [] }
-            ]
+            ],
+            isModalVisible: false,
+            newCard: { title: '', tasks: [{ text: '', completed: false }, { text: '', completed: false }, { text: '', completed: false }] },
         }
     },
     computed: {
@@ -129,27 +131,20 @@ new Vue({
         }
     },
     methods: {
-        addCard(columnIndex) {
-            const title = prompt('Введите название карточки')
-            if (!title) return
-
-            const tasks = []
-
-            for (let i = 0; i < 3; i++) {
-                tasks[i] = {
-                    text: prompt(`Введите название задачи ${i + 1}`),
-                    completed: false,
-                }
-
-                if (!tasks[i].text) return
-            }
-
-            this.columns[columnIndex].cards.push({
+        openModal(value = true) {
+            this.isModalVisible = value
+        },
+        addCard() {
+            this.columns[0].cards.push({
                 id: Date.now(),
-                title,
-                tasks,
+                title: this.newCard.title,
+                tasks: this.newCard.tasks,
                 completedAt: null
             })
+
+            this.openModal(false)
+            this.newCard = { title: '', tasks: [{ text: '', completed: false }, { text: '', completed: false }, { text: '', completed: false }] }
+
             this.saveData()
         },
         addTask(columnIndex, cardIndex, text) {
