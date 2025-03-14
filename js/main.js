@@ -33,13 +33,24 @@ Vue.component('card-component', {
             type: Number,
             required: true
         },
+        columnIndex: {
+            type: Number,
+            required: true
+        },
         isFirstColumnBlocked: {
             type: Boolean,
             default: false
         }
     },
     template: `
-        <div class="card">
+        <div 
+            class="card"
+            :draggable="!isFirstColumnBlocked && !card.completedAt"
+            @dragstart="onDragStart"
+            @dragover.prevent
+            @drop="onDrop"
+            :data-index="cardIndex"
+        >
             <h3>{{ card.title }}</h3>
             <ul>
                 <task-component
@@ -57,7 +68,7 @@ Vue.component('card-component', {
     `,
     computed: {
         canAddTask() {
-            return !this.card.completedAt && this.card.tasks.length < 5 && !this.isFirstColumnBlocked
+            return this.columnIndex === 0 && !this.card.completedAt && this.card.tasks.length < 5 && !this.isFirstColumnBlocked
         }
     },
     methods: {
@@ -65,6 +76,19 @@ Vue.component('card-component', {
             const text = prompt('Введите задачу')
             console.log(text)
             if (text) this.$emit('add-task', text)
+        },
+        onDragStart(event) {
+            event.dataTransfer.setData('text/plain', this.cardIndex);
+        },
+        onDrop(event) {
+            // Index элемента, который нужно переместить
+            const draggedCardIndex = event.dataTransfer.getData('text/plain');
+            // Index элемента, с которым нужно поменять
+            const targetCardIndex = event.currentTarget.dataset.index;
+
+            if (draggedCardIndex !== targetCardIndex) {
+                this.$emit('move-card-in-column', draggedCardIndex, targetCardIndex);
+            }
         }
     }
 })
@@ -92,9 +116,11 @@ Vue.component('column-component', {
                 :key="card.id"
                 :card="card"
                 :cardIndex="index"
+                :columnIndex="columnIndex"
                 :is-first-column-blocked="isFirstColumnBlocked"
                 @add-task="(text) => $emit('add-task', columnIndex, index, text)"
-                @task-updated="$emit('task-updated', columnIndex, index)">
+                @task-updated="$emit('task-updated', columnIndex, index)"
+                @move-card-in-column="moveCardInColumn">
             </card-component>
             <button v-if="canAddCard" @click="$emit('add-card')">Добавить карточку</button>
         </div>
@@ -103,8 +129,19 @@ Vue.component('column-component', {
         canAddCard() {
             return this.columnIndex === 0 && this.column.cards.length < 3 && !this.isFirstColumnBlocked
         }
+    },
+    methods: {
+        moveCardInColumn(draggedCardIndex, targetCardIndex) {
+            const draggedCard = this.column.cards.splice(draggedCardIndex, 1)[0];
+            this.column.cards.splice(targetCardIndex, 0, draggedCard);
+            this.saveData();
+        },
+        saveData() {
+            localStorage.setItem("columns", JSON.stringify(this.columns))
+        }
     }
-})
+});
+
 
 new Vue({
     el: '#app',
@@ -172,3 +209,4 @@ new Vue({
         }
     }
 })
+
